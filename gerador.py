@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Laboratório Bem Me Quer — Gerador automático do Dashboard
+Gerador automático do Dashboard
 Meta Ads + Google Ads — 4 painéis completos
 """
 
@@ -15,6 +15,7 @@ from pathlib import Path
 # ══════════════════════════════════════════════════════════════════════════════
 # CONFIG DO CLIENTE — edite apenas esta seção
 # ══════════════════════════════════════════════════════════════════════════════
+
 SHEET_ID      = "1q5G2IfNqnROatZ1W4sy9KqgbqmpPsOUmYbhhGf6wS7E"
 TEMPLATE_FILE = "dashboard_template.html"
 OUTPUT_FILE   = "index.html"
@@ -265,16 +266,24 @@ def meta_ads_period(p, img_dir):
     df_t = p[p["thumb"].notna()&(p["thumb"].astype(str)!="")&(p["thumb"].astype(str)!="nan")].copy()
     if df_t.empty:
         return []
-    agg = df_t.groupby(["ad","thumb"]).agg(
+    agg = df_t.groupby(["ad","adset","campaign","thumb"]).agg(
         leads=("leads","sum"), spend=("spend","sum"),
         impressions=("impressions","sum"), link_clicks=("link_clicks","sum")
     ).reset_index().sort_values("leads", ascending=False)
     agg["cpl"] = (agg["spend"]/agg["leads"]).where(agg["leads"]>0).round(2)
     agg["ctr"] = (agg["link_clicks"]/agg["impressions"]*100).where(agg["impressions"]>0).round(2)
     result = []
-    for _, r in agg.drop_duplicates("ad").iterrows():
+    for _, r in agg.iterrows():
         local = download_thumb(str(r["thumb"]), img_dir)
-        result.append({"n":str(r["ad"]),"leads":int(r["leads"]),"cpl":safe(r["cpl"]),"ctr":safe(r["ctr"]),"thumb":local})
+        result.append({
+            "n": str(r["ad"]),
+            "camp": str(r["campaign"]),
+            "adset": str(r["adset"]),
+            "leads": int(r["leads"]),
+            "cpl": safe(r["cpl"]),
+            "ctr": safe(r["ctr"]),
+            "thumb": local
+        })
     return result
 
 
@@ -581,7 +590,6 @@ def load_google_ga():
 def google_breakdowns(df_age, df_gen, all_days):
     last = pd.Timestamp(all_days[-1])
     AGE_ORDER = ["18-24","25-34","35-44","45-54","55-64","65+"]
-    all_months = sorted(df_age["date"].dt.to_period("M").unique()) if len(df_age)>0 else []
 
     def bd(start, end):
         pa = df_age[(df_age["date"]>=pd.Timestamp(start))&(df_age["date"]<=pd.Timestamp(end))]
@@ -647,45 +655,31 @@ def inject_all(template_path,
     html = replace_js_const(html, "GKEYWORDS_DATA",  g_kw_d)
     html = replace_js_const(html, "GBD",             g_bd_d)
 
-    # Dates
+    # Datas
     html = re.sub(r"Meta: \d{2}/\d{2}", f"Meta: {meta_last}", html)
     html = re.sub(r"Google: \d{2}/\d{2}", f"Google: {g_last}", html)
-    # CPL thresholds → CONFIG block no JS
-    html = re.sub(
-        r'(const CONFIG = \{[\s\S]*?meta:\s*\{[\s\S]*?cplBom:\s*)\d+',
-        rf'\g<1>{META_CPL_BOM}', html, count=1
-    )
-    html = re.sub(
-        r'(const CONFIG = \{[\s\S]*?meta:\s*\{[\s\S]*?cplMedio:\s*)\d+',
-        rf'\g<1>{META_CPL_MEDIO}', html, count=1
-    )
-    html = re.sub(
-        r'(const CONFIG = \{[\s\S]*?google:\s*\{[\s\S]*?cplBom:\s*)\d+',
-        rf'\g<1>{GOOGLE_CPL_BOM}', html, count=1
-    )
-    html = re.sub(
-        r'(const CONFIG = \{[\s\S]*?google:\s*\{[\s\S]*?cplMedio:\s*)\d+',
-        rf'\g<1>{GOOGLE_CPL_MEDIO}', html, count=1
-    )
 
-    # Meta ADS visibility flag
+    # CPL thresholds → CONFIG block no JS
+    html = re.sub(r'(const CONFIG = \{[\s\S]*?meta:\s*\{[\s\S]*?cplBom:\s*)\d+',   rf'\g<1>{META_CPL_BOM}',    html, count=1)
+    html = re.sub(r'(const CONFIG = \{[\s\S]*?meta:\s*\{[\s\S]*?cplMedio:\s*)\d+', rf'\g<1>{META_CPL_MEDIO}',  html, count=1)
+    html = re.sub(r'(const CONFIG = \{[\s\S]*?google:\s*\{[\s\S]*?cplBom:\s*)\d+', rf'\g<1>{GOOGLE_CPL_BOM}',  html, count=1)
+    html = re.sub(r'(const CONFIG = \{[\s\S]*?google:\s*\{[\s\S]*?cplMedio:\s*)\d+',rf'\g<1>{GOOGLE_CPL_MEDIO}',html, count=1)
+
+    # Flags de visibilidade
     if META_ADS:
         html = html.replace('const META_ATIVO=false;', 'const META_ATIVO=true;')
     else:
         html = html.replace('const META_ATIVO=true;', 'const META_ATIVO=false;')
 
-    # Logo letra e cor de acento
-    html = re.sub(r"const LOGO_LETRA='[^']*'", f"const LOGO_LETRA='{LOGO_LETRA}'", html, count=1)
-    html = re.sub(r"const COR_ACENTO='[^']*'", f"const COR_ACENTO='{COR_ACENTO}'", html, count=1)
-
-    # Nome do cliente
-    html = re.sub(r"const NOME_CLIENTE='[^']*'", f"const NOME_CLIENTE='{NOME_CLIENTE}'", html, count=1)
-
-    # Google ADS visibility flag
     if GOOGLE_ADS:
         html = html.replace('const GOOGLE_ATIVO=false;', 'const GOOGLE_ATIVO=true;')
     else:
         html = html.replace('const GOOGLE_ATIVO=true;', 'const GOOGLE_ATIVO=false;')
+
+    # Logo, cor, nome
+    html = re.sub(r"const LOGO_LETRA='[^']*'",   f"const LOGO_LETRA='{LOGO_LETRA}'",   html, count=1)
+    html = re.sub(r"const COR_ACENTO='[^']*'",   f"const COR_ACENTO='{COR_ACENTO}'",   html, count=1)
+    html = re.sub(r"const NOME_CLIENTE='[^']*'", f"const NOME_CLIENTE='{NOME_CLIENTE}'",html, count=1)
 
     html = re.sub(r"Dados até \d{2}/\d{2}", f"Dados até {meta_last}", html)
     today = date.today().strftime("%d/%m/%Y")
@@ -700,7 +694,7 @@ def inject_all(template_path,
 
 def main():
     print("=" * 60)
-    print("Laboratório Bem Me Quer — Dashboard Meta + Google Ads")
+    print(f"Dashboard — {NOME_CLIENTE}")
     print("=" * 60)
 
     # ── META ──────────────────────────────────────────────────
@@ -723,7 +717,6 @@ def main():
 
         print("  Campanhas...")
         m_camps = meta_camps(df_meta, m_all_days)
-
         m_mes_days = meta_mes_days(df_meta)
 
         print("  Criativos...")
@@ -735,14 +728,14 @@ def main():
         m_bd = meta_breakdowns(df_meta_ga, df_meta_pt, m_all_days, all_months_meta)
     else:
         print("\n[META ADS] desativado")
-        m_daily   = {"days":[],"spend":[],"leads":[],"cpl":[],"ctr":[],"cpm":[]}
-        m_last    = "—"
-        m_monthly = {"meses":[],"lbl":[],"totalS":[],"totalL":[],"cplG":[],"cpmG":[],"ctrG":[]}
-        m_camps   = {}
-        m_mes_days= {}
-        m_kpis    = {}
-        m_ads     = {}
-        m_bd      = {}
+        m_daily    = {"days":[],"spend":[],"leads":[],"cpl":[],"ctr":[],"cpm":[]}
+        m_last     = "—"
+        m_monthly  = {"meses":[],"lbl":[],"totalS":[],"totalL":[],"cplG":[],"cpmG":[],"ctrG":[]}
+        m_camps    = {}
+        m_mes_days = {}
+        m_kpis     = {}
+        m_ads      = {}
+        m_bd       = {}
 
     # ── GOOGLE ────────────────────────────────────────────────
     if GOOGLE_ADS:
@@ -762,7 +755,6 @@ def main():
         print("  Campanhas + palavras-chave...")
         g_camps = google_camps(df_google, g_all_days)
         g_kw    = google_keywords(df_google, g_all_days)
-
         g_mes_days = google_mes_days(df_google)
 
         print("  Breakdowns...")
@@ -770,14 +762,14 @@ def main():
         g_bd = google_breakdowns(df_google_age, df_google_gen, g_all_days)
     else:
         print("\n[GOOGLE ADS] desativado")
-        g_daily   = {"days":[],"spend":[],"conversions":[],"cpl":[],"ctr":[],"cpc":[]}
-        g_last    = "—"
-        g_monthly = {"meses":[],"lbl":[],"totalS":[],"totalConv":[],"totalClicks":[],"totalImp":[],"cplG":[],"cpcG":[],"ctrG":[]}
-        g_camps   = {}
-        g_mes_days= {}
-        g_kpis    = {}
-        g_kw      = {}
-        g_bd      = {}
+        g_daily    = {"days":[],"spend":[],"conversions":[],"cpl":[],"ctr":[],"cpc":[]}
+        g_last     = "—"
+        g_monthly  = {"meses":[],"lbl":[],"totalS":[],"totalConv":[],"totalClicks":[],"totalImp":[],"cplG":[],"cpcG":[],"ctrG":[]}
+        g_camps    = {}
+        g_mes_days = {}
+        g_kpis     = {}
+        g_kw       = {}
+        g_bd       = {}
 
     # ── GERAR HTML ────────────────────────────────────────────
     print("\n[HTML]")
@@ -793,6 +785,39 @@ def main():
 
     Path(OUTPUT_FILE).write_text(html, encoding="utf-8")
     print(f"  ✓ {OUTPUT_FILE} gerado ({len(html)//1024}KB)")
+
+    # ── GERAR data.json (painel da agência) ───────────────────
+    def kpi_snap(kpis, n):
+        k = kpis.get(str(n), {})
+        return {"spend": k.get("spend"), "leads": k.get("leads"), "cpl": k.get("cpl")}
+
+    data_json = {
+        "cliente":    NOME_CLIENTE,
+        "cor":        COR_ACENTO,
+        "letra":      LOGO_LETRA,
+        "atualizado": date.today().strftime("%d/%m/%Y"),
+        "meta": {
+            "cplBom":   META_CPL_BOM,
+            "cplMedio": META_CPL_MEDIO,
+            "d1":  kpi_snap(m_kpis, 1),
+            "d7":  kpi_snap(m_kpis, 7),
+            "d14": kpi_snap(m_kpis, 14),
+            "d30": kpi_snap(m_kpis, 30),
+        },
+        "google": {
+            "ativo":    GOOGLE_ADS,
+            "cplBom":   GOOGLE_CPL_BOM,
+            "cplMedio": GOOGLE_CPL_MEDIO,
+            "d1":  kpi_snap(g_kpis, 1),
+            "d7":  kpi_snap(g_kpis, 7),
+            "d14": kpi_snap(g_kpis, 14),
+            "d30": kpi_snap(g_kpis, 30),
+        },
+    }
+    Path("data.json").write_text(
+        json.dumps(data_json, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    print(f"  ✓ data.json gerado")
     print("=" * 60)
 
 
