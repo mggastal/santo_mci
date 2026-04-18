@@ -787,9 +787,13 @@ def main():
     print(f"  ✓ {OUTPUT_FILE} gerado ({len(html)//1024}KB)")
 
     # ── GERAR data.json (painel da agência) ───────────────────
-    def kpi_snap(kpis, n):
+    def meta_snap(kpis, n):
         k = kpis.get(str(n), {})
         return {"spend": k.get("spend"), "leads": k.get("leads"), "cpl": k.get("cpl")}
+
+    def google_snap(kpis, n):
+        k = kpis.get(str(n), {})
+        return {"spend": k.get("spend"), "leads": k.get("conversions"), "cpl": k.get("cpl")}
 
     data_json = {
         "cliente":    NOME_CLIENTE,
@@ -799,19 +803,19 @@ def main():
         "meta": {
             "cplBom":   META_CPL_BOM,
             "cplMedio": META_CPL_MEDIO,
-            "d1":  kpi_snap(m_kpis, 1),
-            "d7":  kpi_snap(m_kpis, 7),
-            "d14": kpi_snap(m_kpis, 14),
-            "d30": kpi_snap(m_kpis, 30),
+            "d1":  meta_snap(m_kpis, 1),
+            "d7":  meta_snap(m_kpis, 7),
+            "d14": meta_snap(m_kpis, 14),
+            "d30": meta_snap(m_kpis, 30),
         },
         "google": {
             "ativo":    GOOGLE_ADS,
             "cplBom":   GOOGLE_CPL_BOM,
             "cplMedio": GOOGLE_CPL_MEDIO,
-            "d1":  kpi_snap(g_kpis, 1),
-            "d7":  kpi_snap(g_kpis, 7),
-            "d14": kpi_snap(g_kpis, 14),
-            "d30": kpi_snap(g_kpis, 30),
+            "d1":  google_snap(g_kpis, 1),
+            "d7":  google_snap(g_kpis, 7),
+            "d14": google_snap(g_kpis, 14),
+            "d30": google_snap(g_kpis, 30),
         },
     }
     Path("data.json").write_text(
