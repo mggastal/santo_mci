@@ -2,29 +2,29 @@
   "cliente": "MCI Imobiliária",
   "cor": "#EEAD2D",
   "letra": "MCI",
-  "atualizado": "20/05/2026",
+  "atualizado": "21/05/2026",
   "meta": {
     "cplBom": 10,
     "cplMedio": 18,
     "d1": {
-      "spend": 11.67,
-      "leads": 4,
-      "cpl": 2.92
+      "spend": 15.42,
+      "leads": 3,
+      "cpl": 5.14
     },
     "d7": {
-      "spend": 165.66,
-      "leads": 45,
-      "cpl": 3.68
+      "spend": 160.72,
+      "leads": 40,
+      "cpl": 4.02
     },
     "d14": {
-      "spend": 314.03,
-      "leads": 80,
-      "cpl": 3.93
+      "spend": 299.69,
+      "leads": 79,
+      "cpl": 3.79
     },
     "d30": {
-      "spend": 1238.1,
-      "leads": 210,
-      "cpl": 5.9
+      "spend": 1213.17,
+      "leads": 209,
+      "cpl": 5.8
     }
   },
   "google": {
