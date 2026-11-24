@@ -4,8 +4,8 @@
   "letra": "MCI",
   "atualizado": "24/11/2026",
   "meta": {
-    "cplBom": 10,
-    "cplMedio": 18,
+    "cplBom": 10.0,
+    "cplMedio": 18.0,
     "d1": {
       "spend": 26.03,
       "leads": 10,
@@ -28,28 +28,6 @@
     }
   },
   "google": {
-    "ativo": false,
-    "cplBom": 10,
-    "cplMedio": 30,
-    "d1": {
-      "spend": null,
-      "leads": null,
-      "cpl": null
-    },
-    "d7": {
-      "spend": null,
-      "leads": null,
-      "cpl": null
-    },
-    "d14": {
-      "spend": null,
-      "leads": null,
-      "cpl": null
-    },
-    "d30": {
-      "spend": null,
-      "leads": null,
-      "cpl": null
-    }
+    "ativo": false
   }
 }
