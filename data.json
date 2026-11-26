@@ -7,22 +7,22 @@
     "cplBom": 10.0,
     "cplMedio": 18.0,
     "d1": {
-      "spend": 18.51,
+      "spend": 18.56,
       "leads": 4,
-      "cpl": 4.63
+      "cpl": 4.64
     },
     "d7": {
-      "spend": 164.24,
+      "spend": 164.29,
       "leads": 38,
       "cpl": 4.32
     },
     "d14": {
-      "spend": 269.29,
+      "spend": 269.34,
       "leads": 68,
       "cpl": 3.96
     },
     "d30": {
-      "spend": 425.54,
+      "spend": 425.59,
       "leads": 96,
       "cpl": 4.43
     }
